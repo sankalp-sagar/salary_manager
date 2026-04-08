@@ -2,7 +2,9 @@ module Api
   module V1
     class EmployeesController < ApplicationController
       def index
-        employees = Employee.all
+        page = params[:page].to_i > 0 ? params[:page].to_i : 1
+        per_page = params[:per_page].to_i > 0 ? params[:per_page].to_i : 10
+        employees = Employee.offset((page - 1) * per_page).limit(per_page)
         render json: employees, status: :ok
       end
       def create
