@@ -44,5 +44,23 @@ RSpec.describe "Employees API", type: :request do
       expect(response).to have_http_status(:ok)
       expect(JSON.parse(response.body).length).to be > 0
     end
+
+    it "returns paginated employees" do
+      15.times do |i|
+        Employee.create!(
+          first_name: "John#{i}",
+          last_name: "Doe",
+          job_title: "Engineer",
+          country: "USA",
+          salary: 10000
+        )
+      end
+
+      get "/api/v1/employees", params: { page: 1, per_page: 10 }
+
+      data = JSON.parse(response.body)
+
+      expect(data.length).to eq(10)
+    end
   end
 end
