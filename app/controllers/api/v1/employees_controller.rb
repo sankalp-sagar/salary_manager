@@ -1,6 +1,10 @@
 module Api
   module V1
     class EmployeesController < ApplicationController
+      def index
+        employees = Employee.all
+        render json: employees, status: :ok
+      end
       def create
         employee = Employee.new(employee_params)
 
