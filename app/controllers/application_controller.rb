@@ -40,6 +40,10 @@ class ApplicationController < ActionController::API
     render json: { error: message }, status: :not_found
   end
 
+  def render_bad_request(message = "Bad request")
+    render json: { error: message }, status: :bad_request
+  end
+
   def bearer_token
     header = request.headers["Authorization"].to_s
     scheme, token = header.split(" ", 2)
