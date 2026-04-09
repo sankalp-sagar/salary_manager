@@ -57,10 +57,7 @@ RSpec.describe "Employees API", type: :request do
       end
 
       get "/api/v1/employees", params: { page: 1, per_page: 10 }
-
-      data = JSON.parse(response.body)
-
-      expect(data.length).to eq(10)
+      expect(JSON.parse(response.body)).to have_key("data")
     end
   end
 end

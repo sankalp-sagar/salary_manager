@@ -4,8 +4,17 @@ module Api
       def index
         page = params[:page].to_i > 0 ? params[:page].to_i : 1
         per_page = params[:per_page].to_i > 0 ? params[:per_page].to_i : 10
+
         employees = Employee.offset((page - 1) * per_page).limit(per_page)
-        render json: employees, status: :ok
+
+        render json: {
+          data: employees,
+          meta: {
+            page: page,
+            per_page: per_page,
+            total: Employee.count
+          }
+        }, status: :ok
       end
       def create
         employee = Employee.new(employee_params)
