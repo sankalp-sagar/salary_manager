@@ -3,6 +3,7 @@ module Api
     class EmployeesController < ApplicationController
       before_action :authenticate_request
       before_action :authorize_hr!
+      before_action :set_employee, only: [ :show, :update, :destroy ]
 
       def index
         page = params[:page].to_i > 0 ? params[:page].to_i : 1
@@ -22,6 +23,10 @@ module Api
         }
       end
 
+      def show
+        render json: { data: employee_payload(@employee) }
+      end
+
       def create
         employee = Employee.new(employee_params)
 
@@ -32,7 +37,25 @@ module Api
         end
       end
 
+      def update
+        if @employee.update(employee_params)
+          render json: { data: employee_payload(@employee) }
+        else
+          render_unprocessable(@employee.errors.full_messages)
+        end
+      end
+
+      def destroy
+        @employee.destroy!
+        head :no_content
+      end
+
       private
+
+      def set_employee
+        @employee = Employee.find_by(id: params[:id])
+        render_not_found("Employee not found") unless @employee
+      end
 
       def employee_params
         params.require(:employee).permit(

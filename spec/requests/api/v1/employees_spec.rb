@@ -140,4 +140,135 @@ RSpec.describe "Employees API", type: :request do
       expect(json["meta"]["per_page"]).to eq(10)
     end
   end
+
+  describe "GET /api/v1/employees/:id" do
+    let!(:employee_record) do
+      Employee.create!(
+        first_name: "Jane",
+        last_name: "Smith",
+        job_title: "Engineer",
+        country: "UK",
+        salary: 60000,
+        joining_date: Date.today
+      )
+    end
+
+    it "blocks unauthenticated access" do
+      get "/api/v1/employees/#{employee_record.id}"
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it "blocks employee role" do
+      get "/api/v1/employees/#{employee_record.id}",
+          headers: { "Authorization" => "Bearer #{emp_token}" }
+
+      expect(response).to have_http_status(:forbidden)
+    end
+
+    it "returns 404 when employee does not exist" do
+      get "/api/v1/employees/999_999", headers: auth_headers
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "returns the employee" do
+      get "/api/v1/employees/#{employee_record.id}", headers: auth_headers
+
+      expect(response).to have_http_status(:ok)
+      json = JSON.parse(response.body)
+      expect(json.dig("data", "id")).to eq(employee_record.id)
+      expect(json.dig("data", "first_name")).to eq("Jane")
+    end
+  end
+
+  describe "PATCH /api/v1/employees/:id" do
+    let!(:employee_record) do
+      Employee.create!(
+        first_name: "Pat",
+        last_name: "Lee",
+        job_title: "Analyst",
+        country: "Canada",
+        salary: 55000,
+        joining_date: Date.today
+      )
+    end
+
+    it "blocks unauthenticated access" do
+      patch "/api/v1/employees/#{employee_record.id}",
+            params: { employee: { salary: 60_000 } }
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it "blocks employee role" do
+      patch "/api/v1/employees/#{employee_record.id}",
+            params: { employee: { salary: 60_000 } },
+            headers: { "Authorization" => "Bearer #{emp_token}" }
+
+      expect(response).to have_http_status(:forbidden)
+    end
+
+    it "returns 404 when employee does not exist" do
+      patch "/api/v1/employees/999_999",
+            params: { employee: { salary: 60_000 } },
+            headers: auth_headers
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "returns validation errors for invalid data" do
+      patch "/api/v1/employees/#{employee_record.id}",
+            params: { employee: { salary: -1 } },
+            headers: auth_headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    it "updates the employee" do
+      patch "/api/v1/employees/#{employee_record.id}",
+            params: { employee: { salary: 72_000, job_title: "Senior Analyst" } },
+            headers: auth_headers
+
+      expect(response).to have_http_status(:ok)
+      json = JSON.parse(response.body)
+      expect(json.dig("data", "salary")).to eq(72_000)
+      expect(json.dig("data", "job_title")).to eq("Senior Analyst")
+    end
+  end
+
+  describe "DELETE /api/v1/employees/:id" do
+    let!(:employee_record) do
+      Employee.create!(
+        first_name: "Del",
+        last_name: "Me",
+        job_title: "Temp",
+        country: "USA",
+        salary: 40000,
+        joining_date: Date.today
+      )
+    end
+
+    it "blocks unauthenticated access" do
+      delete "/api/v1/employees/#{employee_record.id}"
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it "blocks employee role" do
+      delete "/api/v1/employees/#{employee_record.id}",
+             headers: { "Authorization" => "Bearer #{emp_token}" }
+
+      expect(response).to have_http_status(:forbidden)
+    end
+
+    it "returns 404 when employee does not exist" do
+      delete "/api/v1/employees/999_999", headers: auth_headers
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "deletes the employee" do
+      expect {
+        delete "/api/v1/employees/#{employee_record.id}", headers: auth_headers
+      }.to change(Employee, :count).by(-1)
+
+      expect(response).to have_http_status(:no_content)
+    end
+  end
 end

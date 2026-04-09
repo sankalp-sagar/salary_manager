@@ -36,6 +36,10 @@ class ApplicationController < ActionController::API
     render json: { errors: Array(errors) }, status: :unprocessable_content
   end
 
+  def render_not_found(message = "Not found")
+    render json: { error: message }, status: :not_found
+  end
+
   def bearer_token
     header = request.headers["Authorization"].to_s
     scheme, token = header.split(" ", 2)

@@ -9,7 +9,7 @@ Rails.application.routes.draw do
   # root "posts#index"
   namespace :api do
     namespace :v1 do
-      resources :employees, only: [ :create, :index ]
+      resources :employees, only: [ :index, :show, :create, :update, :destroy ]
       resources :users, only: [ :create ]
       post "login", to: "auth#login"
       post "refresh", to: "auth#refresh"
