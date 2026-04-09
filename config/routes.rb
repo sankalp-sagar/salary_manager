@@ -11,6 +11,9 @@ Rails.application.routes.draw do
     namespace :v1 do
       resources :employees, only: [ :create, :index ]
       resources :users, only: [ :create ]
+      post "login", to: "auth#login"
+      post "refresh", to: "auth#refresh"
+      delete "logout", to: "auth#logout"
     end
   end
 end

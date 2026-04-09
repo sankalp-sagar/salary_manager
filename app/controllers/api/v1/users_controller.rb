@@ -8,9 +8,9 @@ module Api
         user = User.new(user_params)
 
         if user.save
-          render json: { data: user }, status: :created
+          render json: { data: user_payload(user) }, status: :created
         else
-          render json: { errors: user.errors.full_messages }, status: :unprocessable_content
+          render_unprocessable(user.errors.full_messages)
         end
       end
 
@@ -23,6 +23,12 @@ module Api
           :role,
           :first_name,
           :last_name
+        )
+      end
+
+      def user_payload(user)
+        user.as_json(
+          only: [ :id, :email, :first_name, :last_name, :role, :created_at, :updated_at ]
         )
       end
     end

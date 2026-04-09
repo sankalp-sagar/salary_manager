@@ -1,6 +1,29 @@
 require 'rails_helper'
 
 RSpec.describe "Employees API", type: :request do
+  let(:hr) do
+    User.create!(
+      email: "hr@test.com",
+      password: "password",
+      role: "hr_manager"
+    )
+  end
+
+  let(:employee_user) do
+    User.create!(
+      email: "emp@test.com",
+      password: "password",
+      role: "employee"
+    )
+  end
+
+  let(:hr_token) { JsonWebToken.encode(user_id: hr.id) }
+  let(:emp_token) { JsonWebToken.encode(user_id: employee_user.id) }
+
+  let(:auth_headers) do
+    { "Authorization" => "Bearer #{hr_token}" }
+  end
+
   describe "POST /api/v1/employees" do
     let(:valid_params) do
       {
@@ -15,22 +38,34 @@ RSpec.describe "Employees API", type: :request do
       }
     end
 
-    it "creates an employee" do
+    it "blocks unauthenticated request" do
       post "/api/v1/employees", params: valid_params
+      expect(response).to have_http_status(:unauthorized)
+    end
 
+    it "allows hr_manager to create employee" do
+      post "/api/v1/employees", params: valid_params, headers: auth_headers
       expect(response).to have_http_status(:created)
     end
 
-    it "creates an employee in database" do
+    it "creates employee in database" do
       expect {
-        post "/api/v1/employees", params: valid_params
+        post "/api/v1/employees", params: valid_params, headers: auth_headers
       }.to change(Employee, :count).by(1)
     end
 
+    it "blocks employee role" do
+      post "/api/v1/employees",
+           params: valid_params,
+           headers: { "Authorization" => "Bearer #{emp_token}" }
+
+      expect(response).to have_http_status(:forbidden)
+    end
+
     it "returns errors for invalid data" do
-      post "/api/v1/employees", params: {
-        employee: { first_name: "John" }
-      }
+      post "/api/v1/employees",
+           params: { employee: { first_name: "John" } },
+           headers: auth_headers
 
       expect(response).to have_http_status(:unprocessable_content)
     end
@@ -48,12 +83,35 @@ RSpec.describe "Employees API", type: :request do
       )
     end
 
-    it "returns a list of employees" do
+    it "blocks unauthenticated access" do
       get "/api/v1/employees"
+      expect(response).to have_http_status(:unauthorized)
+    end
 
+    it "allows hr_manager" do
+      get "/api/v1/employees", headers: auth_headers
       expect(response).to have_http_status(:ok)
+    end
+
+    it "blocks employee role" do
+      get "/api/v1/employees",
+          headers: { "Authorization" => "Bearer #{emp_token}" }
+
+      expect(response).to have_http_status(:forbidden)
+    end
+
+    it "rejects expired token" do
+      expired = JsonWebToken.encode({ user_id: hr.id }, expires_in: -1.second)
+      get "/api/v1/employees", headers: { "Authorization" => "Bearer #{expired}" }
+
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it "returns employee list with meta" do
+      get "/api/v1/employees", headers: auth_headers
 
       json = JSON.parse(response.body)
+
       expect(json).to have_key("data")
       expect(json["data"].length).to be > 0
       expect(json).to have_key("meta")
@@ -71,7 +129,9 @@ RSpec.describe "Employees API", type: :request do
         )
       end
 
-      get "/api/v1/employees", params: { page: 1, per_page: 10 }
+      get "/api/v1/employees",
+          params: { page: 1, per_page: 10 },
+          headers: auth_headers
 
       json = JSON.parse(response.body)
 

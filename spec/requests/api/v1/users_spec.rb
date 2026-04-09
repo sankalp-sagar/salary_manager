@@ -37,6 +37,8 @@ RSpec.describe "Users API", type: :request do
       }.to change(User, :count).by(1)
 
       expect(response).to have_http_status(:created)
+      json = JSON.parse(response.body)
+      expect(json.dig("data", "password_digest")).to be_nil
     end
 
     it "blocks non-admin users" do
@@ -53,6 +55,15 @@ RSpec.describe "Users API", type: :request do
            headers: { "Authorization" => "Bearer #{token}" }
 
       expect(response).to have_http_status(:forbidden)
+    end
+
+    it "rejects expired token" do
+      expired_token = JsonWebToken.encode({ user_id: admin.id }, expires_in: -1.second)
+      post "/api/v1/users",
+           params: valid_params,
+           headers: { "Authorization" => "Bearer #{expired_token}" }
+
+      expect(response).to have_http_status(:unauthorized)
     end
   end
 end
