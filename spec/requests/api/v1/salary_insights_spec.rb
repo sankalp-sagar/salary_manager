@@ -217,4 +217,154 @@ RSpec.describe "Salary Insights API", type: :request do
       expect(data.first["avg_salary"]).to eq(50_000.0)
     end
   end
+
+  describe "GET /api/v1/salary_insights/employment_by_country" do
+    it "blocks unauthenticated request" do
+      get "/api/v1/salary_insights/employment_by_country"
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it "blocks employee role" do
+      get "/api/v1/salary_insights/employment_by_country",
+          headers: { "Authorization" => "Bearer #{emp_token}" }
+
+      expect(response).to have_http_status(:forbidden)
+    end
+
+    it "returns empty data when there are no employees" do
+      get "/api/v1/salary_insights/employment_by_country", headers: auth_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body)["data"]).to eq([])
+    end
+
+    it "returns active vs former counts and average salaries per country" do
+      join = Date.today - 365
+      left = join + 180
+      Employee.create!(
+        first_name: "Active",
+        last_name: "One",
+        job_title: "Engineer",
+        country: "India",
+        salary: 40_000,
+        joining_date: join,
+        left_at: nil
+      )
+      Employee.create!(
+        first_name: "Active",
+        last_name: "Two",
+        job_title: "Engineer",
+        country: "India",
+        salary: 60_000,
+        joining_date: join,
+        left_at: nil
+      )
+      Employee.create!(
+        first_name: "Former",
+        last_name: "One",
+        job_title: "Engineer",
+        country: "India",
+        salary: 30_000,
+        joining_date: join,
+        left_at: left
+      )
+      Employee.create!(
+        first_name: "Only",
+        last_name: "USA",
+        job_title: "Manager",
+        country: "USA",
+        salary: 100_000,
+        joining_date: join,
+        left_at: nil
+      )
+
+      get "/api/v1/salary_insights/employment_by_country", headers: auth_headers
+
+      expect(response).to have_http_status(:ok)
+      data = JSON.parse(response.body)["data"]
+      india = data.find { |r| r["country"] == "India" }
+      usa = data.find { |r| r["country"] == "USA" }
+
+      expect(india["active_count"]).to eq(2)
+      expect(india["former_count"]).to eq(1)
+      expect(india["active_avg_salary"]).to eq(50_000.0)
+      expect(india["former_avg_salary"]).to eq(30_000.0)
+
+      expect(usa["active_count"]).to eq(1)
+      expect(usa["former_count"]).to eq(0)
+      expect(usa["active_avg_salary"]).to eq(100_000.0)
+      expect(usa["former_avg_salary"]).to be_nil
+    end
+  end
+
+  describe "GET /api/v1/salary_insights/top_job_titles" do
+    it "blocks unauthenticated request" do
+      get "/api/v1/salary_insights/top_job_titles"
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it "blocks employee role" do
+      get "/api/v1/salary_insights/top_job_titles",
+          headers: { "Authorization" => "Bearer #{emp_token}" }
+
+      expect(response).to have_http_status(:forbidden)
+    end
+
+    it "returns job titles ordered by headcount descending" do
+      base = { country: "India", joining_date: Date.today }
+      3.times do |i|
+        Employee.create!(base.merge(first_name: "E#{i}", last_name: "X", job_title: "Engineer", salary: 50_000))
+      end
+      2.times do |i|
+        Employee.create!(base.merge(first_name: "M#{i}", last_name: "X", job_title: "Manager", salary: 60_000))
+      end
+      Employee.create!(base.merge(first_name: "A", last_name: "X", job_title: "Analyst", salary: 45_000))
+
+      get "/api/v1/salary_insights/top_job_titles", headers: auth_headers
+
+      expect(response).to have_http_status(:ok)
+      json = JSON.parse(response.body)
+      expect(json["meta"]["limit"]).to eq(10)
+      titles = json["data"].map { |r| r["job_title"] }
+      expect(titles.first(2)).to eq([ "Engineer", "Manager" ])
+      expect(json["data"].first["employee_count"]).to eq(3)
+    end
+
+    it "respects limit query param and caps at 50" do
+      base = { country: "USA", joining_date: Date.today }
+      5.times do |i|
+        Employee.create!(base.merge(first_name: "R#{i}", last_name: "X", job_title: "Role#{i}", salary: 40_000 + i))
+      end
+
+      get "/api/v1/salary_insights/top_job_titles",
+          params: { limit: 2 },
+          headers: auth_headers
+
+      expect(response).to have_http_status(:ok)
+      json = JSON.parse(response.body)
+      expect(json["data"].length).to eq(2)
+      expect(json["meta"]["limit"]).to eq(2)
+
+      get "/api/v1/salary_insights/top_job_titles",
+          params: { limit: 999 },
+          headers: auth_headers
+
+      expect(JSON.parse(response.body)["meta"]["limit"]).to eq(50)
+    end
+
+    it "breaks ties by job title ascending" do
+      base = { country: "UK", joining_date: Date.today }
+      Employee.create!(base.merge(first_name: "A", last_name: "X", job_title: "Zebra", salary: 50_000))
+      Employee.create!(base.merge(first_name: "B", last_name: "X", job_title: "Zebra", salary: 51_000))
+      Employee.create!(base.merge(first_name: "C", last_name: "X", job_title: "Alpha", salary: 52_000))
+      Employee.create!(base.merge(first_name: "D", last_name: "X", job_title: "Alpha", salary: 53_000))
+
+      get "/api/v1/salary_insights/top_job_titles",
+          params: { limit: 2 },
+          headers: auth_headers
+
+      data = JSON.parse(response.body)["data"]
+      expect(data.map { |r| r["job_title"] }).to eq([ "Alpha", "Zebra" ])
+    end
+  end
 end

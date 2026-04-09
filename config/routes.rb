@@ -12,6 +12,8 @@ Rails.application.routes.draw do
       resources :employees, only: [ :index, :show, :create, :update, :destroy ]
       get "salary_insights/by_country", to: "salary_insights#by_country"
       get "salary_insights/by_job_title_in_country", to: "salary_insights#by_job_title_in_country"
+      get "salary_insights/employment_by_country", to: "salary_insights#employment_by_country"
+      get "salary_insights/top_job_titles", to: "salary_insights#top_job_titles"
       resources :users, only: [ :create ]
       post "login", to: "auth#login"
       post "refresh", to: "auth#refresh"
