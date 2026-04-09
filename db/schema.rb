@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_08_204003) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_09_152015) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -19,10 +19,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_08_204003) do
     t.datetime "created_at", null: false
     t.string "first_name"
     t.string "job_title"
+    t.date "joining_date", null: false
     t.string "last_name"
+    t.date "left_at"
     t.integer "salary"
     t.datetime "updated_at", null: false
     t.index ["country"], name: "index_employees_on_country"
     t.index ["job_title"], name: "index_employees_on_job_title"
+    t.index ["joining_date"], name: "index_employees_on_joining_date"
+    t.index ["left_at"], name: "index_employees_on_left_at"
   end
 end
