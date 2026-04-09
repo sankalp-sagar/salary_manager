@@ -10,6 +10,7 @@ Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
       resources :employees, only: [ :index, :show, :create, :update, :destroy ]
+      get "salary_insights/by_country", to: "salary_insights#by_country"
       resources :users, only: [ :create ]
       post "login", to: "auth#login"
       post "refresh", to: "auth#refresh"
