@@ -1,4 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import {
+  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from 'recharts';
 import api from '../services/api';
 import './SalaryInsights.css';
 
@@ -11,6 +15,8 @@ function SalaryInsights() {
   const [error, setError] = useState(null);
   const [selectedCountry, setSelectedCountry] = useState('');
   const [selectedJobTitle, setSelectedJobTitle] = useState('');
+
+  const COLORS = ['#3498db', '#2ecc71', '#e74c3c', '#f39c12', '#9b59b6', '#1abc9c', '#34495e', '#e67e22'];
 
   useEffect(() => {
     fetchAllInsights();
@@ -66,79 +72,129 @@ function SalaryInsights() {
   const uniqueCountries = [...new Set(countryData.map(item => item.country))];
   const uniqueJobTitles = [...new Set(jobTitleData.map(item => item.job_title))];
 
-  if (loading) return <div className="loading">Loading salary insights...</div>;
-  if (error) return <div className="error">{error}</div>;
+  const totalEmployees = countryData.reduce((sum, item) => sum + item.employee_count, 0);
+  const avgSalary = countryData.length > 0
+    ? (countryData.reduce((sum, item) => sum + (item.avg_salary || 0), 0) / countryData.length).toFixed(2)
+    : 0;
+
+  if (loading) return <div className="loading">📊 Loading salary insights...</div>;
+  if (error) return <div className="error">❌ {error}</div>;
 
   return (
     <div className="salary-insights">
-      <h1>Salary Insights</h1>
+      <h1>💼 Salary Insights Dashboard</h1>
+
+      {/* KPI Cards */}
+      <div className="kpi-grid">
+        <div className="kpi-card">
+          <div className="kpi-value">{totalEmployees.toLocaleString()}</div>
+          <div className="kpi-label">Total Employees</div>
+        </div>
+        <div className="kpi-card">
+          <div className="kpi-value">{countryData.length}</div>
+          <div className="kpi-label">Countries</div>
+        </div>
+        <div className="kpi-card">
+          <div className="kpi-value">${(avgSalary / 1000).toFixed(1)}K</div>
+          <div className="kpi-label">Avg Salary</div>
+        </div>
+        <div className="kpi-card">
+          <div className="kpi-value">${countryData.reduce((max, item) => Math.max(max, item.max_salary || 0), 0).toLocaleString()}</div>
+          <div className="kpi-label">Max Salary</div>
+        </div>
+      </div>
 
       <div className="insights-grid">
-        {/* Salary by Country */}
-        <div className="insight-card">
-          <h2>Salary Statistics by Country</h2>
-          <div className="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Country</th>
-                  <th>Employees</th>
-                  <th>Min Salary</th>
-                  <th>Max Salary</th>
-                  <th>Avg Salary</th>
-                </tr>
-              </thead>
-              <tbody>
-                {countryData.map((item) => (
-                  <tr key={item.country}>
-                    <td>{item.country}</td>
-                    <td>{item.employee_count}</td>
-                    <td>${item.min_salary?.toLocaleString()}</td>
-                    <td>${item.max_salary?.toLocaleString()}</td>
-                    <td>${item.avg_salary?.toFixed(2)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        {/* Salary by Country - Bar Chart */}
+        <div className="insight-card full-width">
+          <h2>📊 Salary Statistics by Country</h2>
+          <ResponsiveContainer width="100%" height={400}>
+            <BarChart data={countryData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#ecf0f1" />
+              <XAxis dataKey="country" />
+              <YAxis />
+              <Tooltip
+                formatter={(value) => `$${value.toLocaleString()}`}
+                contentStyle={{ backgroundColor: '#2c3e50', border: 'none', borderRadius: '8px', color: '#fff' }}
+              />
+              <Legend />
+              <Bar dataKey="min_salary" fill="#3498db" name="Min Salary" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="max_salary" fill="#e74c3c" name="Max Salary" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="avg_salary" fill="#2ecc71" name="Avg Salary" radius={[8, 8, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
 
-        {/* Employment by Country */}
+        {/* Employment Status by Country */}
         <div className="insight-card">
-          <h2>Employment Status by Country</h2>
-          <div className="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Country</th>
-                  <th>Active</th>
-                  <th>Former</th>
-                  <th>Active Avg Salary</th>
-                  <th>Former Avg Salary</th>
-                </tr>
-              </thead>
-              <tbody>
-                {employmentData.map((item) => (
-                  <tr key={item.country}>
-                    <td>{item.country}</td>
-                    <td>{item.active_count}</td>
-                    <td>{item.former_count}</td>
-                    <td>${item.active_avg_salary?.toFixed(2)}</td>
-                    <td>${item.former_avg_salary?.toFixed(2)}</td>
-                  </tr>
+          <h2>👥 Employment Status</h2>
+          <ResponsiveContainer width="100%" height={350}>
+            <BarChart data={employmentData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#ecf0f1" />
+              <XAxis dataKey="country" angle={-45} textAnchor="end" height={100} />
+              <YAxis />
+              <Tooltip
+                contentStyle={{ backgroundColor: '#2c3e50', border: 'none', borderRadius: '8px', color: '#fff' }}
+              />
+              <Legend />
+              <Bar dataKey="active_count" fill="#2ecc71" name="Active" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="former_count" fill="#e74c3c" name="Former" radius={[8, 8, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Top Job Titles - Pie Chart */}
+        <div className="insight-card">
+          <h2>🏆 Top Job Titles</h2>
+          <ResponsiveContainer width="100%" height={350}>
+            <PieChart>
+              <Pie
+                data={topJobTitles}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                outerRadius={100}
+                fill="#8884d8"
+                dataKey="employee_count"
+              >
+                {topJobTitles.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </Pie>
+              <Tooltip formatter={(value) => value.toLocaleString()} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Average Salary Trend */}
+        <div className="insight-card">
+          <h2>📈 Salary Range by Country</h2>
+          <ResponsiveContainer width="100%" height={350}>
+            <LineChart data={countryData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#ecf0f1" />
+              <XAxis dataKey="country" angle={-45} textAnchor="end" height={100} />
+              <YAxis />
+              <Tooltip
+                formatter={(value) => `$${value.toLocaleString()}`}
+                contentStyle={{ backgroundColor: '#2c3e50', border: 'none', borderRadius: '8px', color: '#fff' }}
+              />
+              <Legend />
+              <Line type="monotone" dataKey="min_salary" stroke="#3498db" name="Min Salary" strokeWidth={2} />
+              <Line type="monotone" dataKey="avg_salary" stroke="#2ecc71" name="Avg Salary" strokeWidth={2} />
+              <Line type="monotone" dataKey="max_salary" stroke="#e74c3c" name="Max Salary" strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
 
         {/* Job Title Insights */}
-        <div className="insight-card">
-          <h2>Salary by Job Title in Country</h2>
+        <div className="insight-card full-width">
+          <h2>💼 Salary by Job Title in Country</h2>
           <div className="filters">
             <select
               value={selectedCountry}
               onChange={(e) => handleCountryChange(e.target.value)}
+              className="filter-select"
             >
               <option value="">Select Country</option>
               {uniqueCountries.map(country => (
@@ -150,6 +206,7 @@ function SalaryInsights() {
               <select
                 value={selectedJobTitle}
                 onChange={(e) => handleJobTitleChange(e.target.value)}
+                className="filter-select"
               >
                 <option value="">All Job Titles</option>
                 {uniqueJobTitles.map(jobTitle => (
@@ -160,54 +217,22 @@ function SalaryInsights() {
           </div>
 
           {jobTitleData.length > 0 && (
-            <div className="table-container">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Job Title</th>
-                    <th>Employees</th>
-                    <th>Min Salary</th>
-                    <th>Max Salary</th>
-                    <th>Avg Salary</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {jobTitleData.map((item, index) => (
-                    <tr key={`${item.job_title}-${index}`}>
-                      <td>{item.job_title}</td>
-                      <td>{item.employee_count}</td>
-                      <td>${item.min_salary?.toLocaleString()}</td>
-                      <td>${item.max_salary?.toLocaleString()}</td>
-                      <td>${item.avg_salary?.toFixed(2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <ResponsiveContainer width="100%" height={400}>
+              <BarChart data={jobTitleData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#ecf0f1" />
+                <XAxis dataKey="job_title" angle={-45} textAnchor="end" height={100} />
+                <YAxis yAxisId="left" />
+                <YAxis yAxisId="right" orientation="right" />
+                <Tooltip
+                  formatter={(value) => typeof value === 'number' ? `$${value.toLocaleString()}` : value}
+                  contentStyle={{ backgroundColor: '#2c3e50', border: 'none', borderRadius: '8px', color: '#fff' }}
+                />
+                <Legend />
+                <Bar yAxisId="right" dataKey="employee_count" fill="#3498db" name="Employee Count" radius={[8, 8, 0, 0]} />
+                <Bar yAxisId="left" dataKey="avg_salary" fill="#2ecc71" name="Avg Salary" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           )}
-        </div>
-
-        {/* Top Job Titles */}
-        <div className="insight-card">
-          <h2>Top Job Titles</h2>
-          <div className="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Job Title</th>
-                  <th>Employee Count</th>
-                </tr>
-              </thead>
-              <tbody>
-                {topJobTitles.map((item) => (
-                  <tr key={item.job_title}>
-                    <td>{item.job_title}</td>
-                    <td>{item.employee_count}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         </div>
       </div>
     </div>
