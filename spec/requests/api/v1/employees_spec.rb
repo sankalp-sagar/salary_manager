@@ -32,7 +32,7 @@ RSpec.describe "Employees API", type: :request do
         employee: { first_name: "John" }
       }
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
   end
 

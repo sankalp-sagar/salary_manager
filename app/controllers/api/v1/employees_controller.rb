@@ -22,7 +22,7 @@ module Api
         if employee.save
           render json: employee, status: :created
         else
-          render json: { errors: employee.errors.full_messages }, status: :unprocessable_entity
+          render json: { errors: employee.errors.full_messages }, status: :unprocessable_content
         end
       end
 
