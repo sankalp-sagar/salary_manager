@@ -3,6 +3,8 @@
 # Usage: rails db:seed
 
 puts "🌱 Starting database seeding..."
+User.create(email: 'hr@test.com', password: 'password', password_confirmation: 'password', role: 1, first_name: 'HR', last_name: 'Manager')
+User.create(email: 'admin@test.com', password: 'password', password_confirmation: 'password', role: 2, first_name: 'Admin', last_name: 'User')
 
 # Clear existing employees (idempotent)
 Employee.delete_all
