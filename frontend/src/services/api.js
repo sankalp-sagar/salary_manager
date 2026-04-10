@@ -34,17 +34,17 @@ class ApiService {
 
   async getEmployee(id) {
     const response = await apiClient.get(`/api/v1/employees/${id}`);
-    return response.data;
+    return response.data.data;
   }
 
   async createEmployee(employeeData) {
     const response = await apiClient.post('/api/v1/employees', { employee: employeeData });
-    return response.data;
+    return response.data.data;
   }
 
   async updateEmployee(id, employeeData) {
     const response = await apiClient.put(`/api/v1/employees/${id}`, { employee: employeeData });
-    return response.data;
+    return response.data.data;
   }
 
   async deleteEmployee(id) {
