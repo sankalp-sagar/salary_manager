@@ -85,8 +85,7 @@ Rails.application.configure do
   # Do not dump schema after migrations.
   config.active_record.dump_schema_after_migration = false
 
-  # Disable asset compilation (API only)
-  config.assets.compile = false
+
 
   # Reduce logging overhead
   config.log_level = :warn
