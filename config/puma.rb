@@ -2,7 +2,7 @@
 # are invoked here are part of Puma's configuration DSL. For more information
 # about methods provided by the DSL, see https://puma.io/puma/Puma/DSL.html.
 
-# Puma starts a configurable number of processes (workers) and each process
+# Puma can be configured for multiple processes (workers), but using 1 for Render free tier
 # serves each request in a thread from an internal thread pool.
 #
 # The ideal number of threads per worker depends both on how much time the
@@ -20,13 +20,20 @@
 # Any libraries that use a connection pool or another resource pool should
 # be configured to provide at least as many connections as the number of
 # threads. This includes Active Record's `pool` parameter in `database.yml`.
-threads_count = ENV.fetch("RAILS_MAX_THREADS", 3)
+threads_count = ENV.fetch("RAILS_MAX_THREADS") { 2 }
 threads threads_count, threads_count
+
+# Use 1 worker for Render free tier (multi-workers need paid CPU)
+workers 1
+
+# Preload app before forking workers for faster cold boots
+preload_app!
 
 # Specifies the `port` that Puma will listen on to receive requests; default is 3000.
 port ENV.fetch("PORT", 3000)
 
 # Allow puma to be restarted by `bin/rails restart` command.
+environment ENV.fetch("RAILS_ENV", "production")
 plugin :tmp_restart
 
 # Specify the PID file. Defaults to tmp/pids/server.pid in development.

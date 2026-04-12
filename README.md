@@ -55,6 +55,27 @@ If the frontend needs a custom API URL, set `REACT_APP_API_URL` in a `.env` file
 ## Default credential
 - HR user: `hr@test.com` / `password`
 
+## Render.com Deployment (Cold Boot Optimized)
+Deploy as **Web Service** (slug) or **Docker**.
+
+### Environment Variables (Dashboard > Environment)
+```
+RAILS_MASTER_KEY     # Run: EDITOR="code --wait" bin/rails credentials:edit -e production
+DATABASE_URL         # From Render PostgreSQL service (Internal DB URL)
+REDIS_URL            # Optional, if using cache/sessions
+```
+
+**Slug Deploy**:
+- Build Command: `bundle lock --add-platform x86_64-linux && bundle install`
+- Start Command: `bundle exec puma -C config/puma.rb`
+
+**Docker Deploy** (recommended):
+- Connect Docker registry.
+- Auto-deploy on push.
+
+Post-deploy: Run `rails db:migrate` via shell if needed. Health check `/up`.
+
+Cold boot target: <30s (optimized Puma preload/workers, low pool/threads, bootsnap).
 
 ## App architecture 
 - Routes are namespaced under api/v1

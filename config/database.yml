@@ -83,3 +83,4 @@ production:
   database: salary_manager_production
   username: salary_manager
   password: <%= ENV["SALARY_MANAGER_DATABASE_PASSWORD"] %>
+  pool: 2

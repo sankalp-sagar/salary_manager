@@ -85,6 +85,13 @@ Rails.application.configure do
   # Do not dump schema after migrations.
   config.active_record.dump_schema_after_migration = false
 
+  # Disable asset compilation (API only)
+  config.assets.compile = false
+
+  # Reduce logging overhead
+  config.log_level = :warn
+  config.active_record.verbose_query_logs = false
+
   # Only use :id for inspections in production.
   config.active_record.attributes_for_inspect = [ :id ]
 
